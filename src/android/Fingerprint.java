@@ -1,6 +1,7 @@
 package de.niklasmerz.cordova.biometric;
 
 import android.app.Activity;
+import android.app.KeyguardManager;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
@@ -17,12 +18,15 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import static android.content.Context.KEYGUARD_SERVICE;
+
 public class Fingerprint extends CordovaPlugin {
 
     private static final String TAG = "Fingerprint";
     private CallbackContext mCallbackContext = null;
 
     private static final int REQUEST_CODE_BIOMETRIC = 1;
+    private static final int REQUEST_CODE_PIN = 666;
     private PromptInfo.Builder mPromptInfoBuilder;
 
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
@@ -51,7 +55,8 @@ public class Fingerprint extends CordovaPlugin {
     private void executeIsAvailable() {
         PluginError error = canAuthenticate();
         if (error != null) {
-            sendError(error);
+            pinAuthenticate();
+            //sendError(error);
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P){
             sendSuccess("biometric");
         } else {
@@ -62,7 +67,8 @@ public class Fingerprint extends CordovaPlugin {
     private void executeAuthenticate(JSONArray args) {
         PluginError error = canAuthenticate();
         if (error != null) {
-            sendError(error);
+            pinAuthenticate();
+            //sendError(error);
             return;
         }
         cordova.getActivity().runOnUiThread(() -> {
@@ -79,10 +85,16 @@ public class Fingerprint extends CordovaPlugin {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         super.onActivityResult(requestCode, resultCode, intent);
+        Log.v(TAG, requestCode + " requestCode");
         if (requestCode != REQUEST_CODE_BIOMETRIC) {
-            return;
-        }
-        if (resultCode == Activity.RESULT_OK) {
+            if ( requestCode == REQUEST_CODE_PIN ){
+                if ( resultCode == -1){
+                    sendSuccess("pin");
+                }
+            }else{
+                return;
+            }
+        } else if (resultCode == Activity.RESULT_OK) {
             sendSuccess("biometric_success");
         } else if (intent != null) {
             Bundle extras = intent.getExtras();
@@ -102,6 +114,16 @@ public class Fingerprint extends CordovaPlugin {
                 return PluginError.BIOMETRIC_NOT_ENROLLED;
             default:
                 return null;
+        }
+    }
+
+    private void pinAuthenticate(){
+        KeyguardManager keyguardManager = (KeyguardManager) cordova.getActivity().getSystemService(KEYGUARD_SERVICE);
+        Intent i = keyguardManager.createConfirmDeviceCredentialIntent("Vérificaion identité", "Utilisez le code PIN actuel");
+        try {
+            this.cordova.startActivityForResult(this, i, REQUEST_CODE_PIN);
+        } catch (Exception e) {
+            Log.v("ERROR KEYGUARD", e.toString());
         }
     }
 
