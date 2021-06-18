@@ -1,9 +1,9 @@
 {
-    "name": "cordova-plugin-fingerprint-aio-tests",
+    "name": "cordova-plugin-fingerprint-face-pin-schema-tests",
     "version": "1.0.0-dev",
     "description": "",
     "cordova": {
-        "id": "cordova-plugin-fingerprint-aio-tests",
+        "id": "cordova-plugin-fingerprint-face-pin-schema-tests",
         "platforms": ["android", "ios"]
     },
     "keywords": [
